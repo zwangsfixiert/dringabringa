@@ -93,9 +93,30 @@
           <span class="summary-total-val" id="cart-total">{{ cart.total_price | money }}</span>
         </div>
 
+        {%- assign now_hour = 'now' | date: '%H' | plus: 0 -%}
+        {%- assign is_open = false -%}
+        {%- if now_hour >= 21 or now_hour < 9 -%}
+          {%- assign is_open = true -%}
+        {%- endif -%}
+
         <form action="/checkout" method="post">
-          <button type="submit" class="checkout-btn">Zur Kasse →</button>
+          <button type="submit" class="checkout-btn{% unless is_open %} btn-closed{% endunless %}"
+            {% unless is_open %}disabled{% endunless %}>
+            {%- if is_open -%}
+              Zur Kasse →
+            {%- else -%}
+              🔒 Bestellen ab 21:00 Uhr
+            {%- endif -%}
+          </button>
         </form>
+
+        {%- unless is_open -%}
+          <div class="cart-closed-note">
+            🌙 Wir sind gerade geschlossen.<br>
+            <strong>Öffnungszeiten: täglich 21:00 – 09:00 Uhr</strong><br>
+            <small>Du kannst deinen Warenkorb schon befüllen – die Bestellung wird dann ab 21:00 möglich.</small>
+          </div>
+        {%- endunless -%}
 
         <a href="/collections/all" class="continue-shopping">← Weiter einkaufen</a>
 
