@@ -1,0 +1,169 @@
+{% comment %} templates/product.liquid {% endcomment %}
+
+{% assign emoji = product.metafields.custom.emoji | default: '🍺' %}
+
+<div class="container product-page">
+  <div class="product-page-grid">
+
+    <div class="product-page-img">
+      {% if product.featured_image %}
+        <img
+          src="{{ product.featured_image | image_url: width: 600 }}"
+          srcset="
+            {{ product.featured_image | image_url: width: 400 }} 400w,
+            {{ product.featured_image | image_url: width: 600 }} 600w,
+            {{ product.featured_image | image_url: width: 800 }} 800w
+          "
+          sizes="(max-width: 900px) 100vw, 50vw"
+          width="600" height="600"
+          alt="{{ product.featured_image.alt | default: product.title | escape }}"
+          loading="eager"
+          fetchpriority="high"
+        >
+      {% else %}
+        <span role="img" aria-label="{{ product.title }}">{{ emoji }}</span>
+      {% endif %}
+    </div>
+
+    <div>
+      {% if product.vendor != blank %}
+        <div class="product-page-vendor">{{ product.vendor }}</div>
+      {% endif %}
+      <h1 class="product-page-title">{{ product.title }}</h1>
+
+      <div class="product-price-row">
+        <div class="product-page-price">{{ product.price | money }}</div>
+        {% if product.compare_at_price > product.price %}
+          <span class="product-compare-price">{{ product.compare_at_price | money }}</span>
+          {% assign discount = product.compare_at_price | minus: product.price | times: 100.0 | divided_by: product.compare_at_price | round %}
+          <span class="product-discount-badge">−{{ discount }}%</span>
+        {% endif %}
+      </div>
+
+      {% if product.description != blank %}
+        <div class="product-page-desc">{{ product.description }}</div>
+      {% endif %}
+
+      {% form 'product', product, id: 'product-form' %}
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+
+        <!-- Quantity Stepper -->
+        <div class="qty-stepper-wrap">
+          <div class="qty-stepper-label">Menge</div>
+          <div class="qty-stepper" role="group" aria-label="Menge auswählen">
+            <button type="button" class="qty-stepper-btn" id="qtyMinus" onclick="changeQty(-1)" aria-label="Menge verringern">−</button>
+            <input type="number" name="quantity" id="qtyInput" value="1" min="1" max="24"
+              class="qty-stepper-input" readonly aria-label="Aktuelle Menge">
+            <button type="button" class="qty-stepper-btn" id="qtyPlus" onclick="changeQty(1)" aria-label="Menge erhöhen">+</button>
+          </div>
+          <div class="qty-stepper-total" id="qtyTotal" aria-live="polite">{{ product.price | money }}</div>
+        </div>
+
+        <button type="submit" class="product-page-atc" id="mainAtcBtn">
+          🛒 In den Warenkorb
+        </button>
+      {% endform %}
+
+      <a href="/collections/all" class="back-to-shop">← Weiter einkaufen</a>
+
+      <!-- Trust Signals -->
+      <div class="trust-box" aria-label="Unsere Versprechen">
+        <div class="trust-item">
+          <div class="trust-icon">🚀</div>
+          <div class="trust-text"><strong>Expresslieferung 25 Min</strong><span>Wels & Umgebung</span></div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">🌙</div>
+          <div class="trust-text"><strong>21:00–09:00</strong><span>Täglich für dich da</span></div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">🆓</div>
+          <div class="trust-text"><strong>Gratis ab 20 €</strong><span>Kostenlose Lieferung</span></div>
+        </div>
+        <div class="trust-item">
+          <div class="trust-icon">📞</div>
+          <div class="trust-text"><strong>+43 650 / 77 45 616</strong><span>Direkt anrufen</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sticky ATC Bar -->
+<div class="sticky-atc-bar" id="stickyAtcBar" aria-hidden="true">
+  <div class="sticky-atc-inner">
+    <div class="sticky-atc-info">
+      <span class="sticky-atc-name">{{ product.title | truncate: 40 }}</span>
+      <span class="sticky-atc-price" id="stickyPrice">{{ product.price | money }}</span>
+    </div>
+    <button class="btn-sticky-atc"
+      data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+      data-product-title="{{ product.title | escape }}"
+      aria-label="{{ product.title }} in den Warenkorb"
+      onclick="addToCartSticky(this)">
+      🛒 In den Warenkorb
+    </button>
+  </div>
+</div>
+
+<script>
+// ── Quantity Stepper ──
+var currentQty = 1;
+var basePrice = {{ product.price }};
+
+function changeQty(delta) {
+  currentQty = Math.max(1, Math.min(24, currentQty + delta));
+  document.getElementById('qtyInput').value = currentQty;
+  document.getElementById('qtyMinus').disabled = currentQty <= 1;
+  var total = basePrice * currentQty;
+  document.getElementById('qtyTotal').textContent = formatMoney(total);
+  var stickyPrice = document.getElementById('stickyPrice');
+  if (stickyPrice) stickyPrice.textContent = formatMoney(total);
+}
+
+// Initialize minus button state
+document.getElementById('qtyMinus').disabled = true;
+
+// ── Sticky ATC via IntersectionObserver ──
+var stickyBar = document.getElementById('stickyAtcBar');
+var mainBtn   = document.getElementById('mainAtcBtn');
+if (stickyBar && mainBtn) {
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      var visible = !entry.isIntersecting;
+      stickyBar.classList.toggle('visible', visible);
+      stickyBar.setAttribute('aria-hidden', String(!visible));
+    });
+  }, { threshold: 0 });
+  obs.observe(mainBtn);
+}
+
+// ── Sticky ATC add to cart ──
+async function addToCartSticky(btn) {
+  var variantId = btn.dataset.variantId;
+  var title     = btn.dataset.productTitle || 'Produkt';
+  var qty       = currentQty;
+  if (!variantId) return;
+  var prev = btn.textContent;
+  btn.textContent = '…';
+  btn.disabled = true;
+  try {
+    var res = await fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: variantId, quantity: qty })
+    });
+    if (!res.ok) throw new Error();
+    var cartRes = await fetch('/cart.js');
+    var cart    = await cartRes.json();
+    updateCartCount(cart.item_count, cart.total_price);
+    btn.textContent = '✓ Hinzugefügt';
+    showToast('✅ ' + title + ' ×' + qty + ' zum Warenkorb');
+    setTimeout(function() { btn.textContent = prev; btn.disabled = false; }, 1600);
+  } catch(e) {
+    showToast('❌ Fehler – bitte nochmal versuchen');
+    btn.textContent = prev;
+    btn.disabled = false;
+  }
+}
+</script>

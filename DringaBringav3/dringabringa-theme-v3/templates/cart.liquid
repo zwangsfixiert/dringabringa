@@ -1,0 +1,220 @@
+{% comment %} templates/cart.liquid – DringaBringa v3 {% endcomment %}
+
+<div class="container cart-page">
+  <h1 class="cart-title">🛒 Warenkorb</h1>
+
+  {% if cart.item_count == 0 %}
+    <div class="cart-empty">
+      <div style="font-size:4rem;margin-bottom:20px;">🛒</div>
+      <p>Dein Warenkorb ist leer.</p>
+      <a href="/collections/all" class="btn-fire">🍺 Jetzt shoppen</a>
+    </div>
+  {% else %}
+
+    <div class="cart-layout" id="cartLayout">
+
+      <!-- Cart Items -->
+      <div class="cart-items" id="cartItems">
+        {% for item in cart.items %}
+          <div class="cart-item" data-key="{{ item.key }}">
+            {% if item.image %}
+              <img class="cart-item-img"
+                src="{{ item.image | image_url: width: 120 }}"
+                width="56" height="56"
+                alt="{{ item.image.alt | default: item.title | escape }}"
+                loading="lazy">
+            {% else %}
+              <div class="cart-item-emoji">{{ item.product.metafields.custom.emoji | default: '🍺' }}</div>
+            {% endif %}
+
+            <div class="cart-item-info">
+              <div class="cart-item-title">{{ item.title }}</div>
+              {% if item.vendor != blank %}
+                <div class="cart-item-vendor">{{ item.vendor }}</div>
+              {% endif %}
+            </div>
+
+            <div class="qty-wrap" role="group" aria-label="Menge für {{ item.title }}">
+              <button class="qty-btn minus"
+                aria-label="Menge verringern"
+                data-key="{{ item.key }}"
+                data-qty="{{ item.quantity | minus: 1 }}"
+                onclick="updateQty(this.dataset.key, parseInt(this.dataset.qty))">−</button>
+              <div class="qty-val" data-key-display="{{ item.key }}">{{ item.quantity }}</div>
+              <button class="qty-btn plus"
+                aria-label="Menge erhöhen"
+                data-key="{{ item.key }}"
+                data-qty="{{ item.quantity | plus: 1 }}"
+                onclick="updateQty(this.dataset.key, parseInt(this.dataset.qty))">+</button>
+            </div>
+
+            <div class="cart-item-price"
+              data-unit-price="{{ item.price }}"
+              data-key-price="{{ item.key }}">{{ item.line_price | money }}</div>
+
+            <button class="cart-remove"
+              aria-label="{{ item.title }} entfernen"
+              data-key="{{ item.key }}"
+              onclick="updateQty(this.dataset.key, 0)">✕</button>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Summary -->
+      <div class="cart-summary">
+
+        <!-- Free Delivery Progress Bar -->
+        <div class="free-ship-progress" id="freeShipProgress">
+          <div class="fsp-text" id="fspText"></div>
+          <div class="fsp-track">
+            <div class="fsp-fill" id="fspFill"></div>
+          </div>
+        </div>
+
+        <div class="cart-summary-title">Bestellübersicht</div>
+
+        <div class="summary-line">
+          <span>Zwischensumme</span>
+          <strong id="cart-subtotal">{{ cart.total_price | money }}</strong>
+        </div>
+        <div class="summary-line" id="delivery-line">
+          {% if cart.total_price >= 2000 %}
+            <span>Lieferung</span>
+            <strong style="color:var(--mint)">Gratis 🎉</strong>
+          {% else %}
+            <span>Lieferung</span>
+            <strong>€ 2,50</strong>
+          {% endif %}
+        </div>
+
+        <div class="summary-divider"></div>
+        <div class="summary-total">
+          <span class="summary-total-label">Gesamt</span>
+          <span class="summary-total-val" id="cart-total">{{ cart.total_price | money }}</span>
+        </div>
+
+        <form action="/checkout" method="post">
+          <button type="submit" class="checkout-btn">Zur Kasse →</button>
+        </form>
+
+        <a href="/collections/all" class="continue-shopping">← Weiter einkaufen</a>
+
+        <!-- Trust Box -->
+        <div class="trust-box">
+          <div class="trust-item">
+            <span class="trust-icon">🔒</span>
+            <div class="trust-text">
+              <strong>Sichere Zahlung</strong>
+              <span>SSL-verschlüsselt</span>
+            </div>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">🚀</span>
+            <div class="trust-text">
+              <strong>Expresslieferung</strong>
+              <span>In 25 Min zu dir</span>
+            </div>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">❄️</span>
+            <div class="trust-text">
+              <strong>Eisgekühlt</strong>
+              <span>Immer frisch & kalt</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  {% endif %}
+</div>
+
+<script>
+var FREE_DELIVERY_THRESHOLD = 2000;
+
+function updateFreeDeliveryBar(totalCents) {
+  var pct  = Math.min((totalCents / FREE_DELIVERY_THRESHOLD) * 100, 100);
+  var fill = document.getElementById('fspFill');
+  var text = document.getElementById('fspText');
+  if (!fill || !text) return;
+  fill.style.width = pct + '%';
+  if (totalCents >= FREE_DELIVERY_THRESHOLD) {
+    text.innerHTML = '🎉 <strong>Gratis-Lieferung aktiviert!</strong>';
+  } else {
+    var euros = ((FREE_DELIVERY_THRESHOLD - totalCents) / 100).toLocaleString('de-AT', { style: 'currency', currency: 'EUR' });
+    text.innerHTML = 'Noch <strong>' + euros + '</strong> bis zur Gratis-Lieferung 🚚';
+  }
+}
+
+updateFreeDeliveryBar({{ cart.total_price }});
+
+async function updateQty(key, qty) {
+  document.querySelectorAll('.qty-btn, .cart-remove').forEach(function(b) { b.disabled = true; });
+  try {
+    var res = await fetch('/cart/change.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: key, quantity: qty })
+    });
+    if (!res.ok) throw new Error();
+    var cart = await res.json();
+
+    if (qty === 0) {
+      var row = document.querySelector('.cart-item[data-key="' + key + '"]');
+      if (row) {
+        row.style.transition = 'opacity 0.25s, transform 0.25s';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(20px)';
+        setTimeout(function() {
+          row.remove();
+          if (cart.item_count === 0) {
+            document.getElementById('cartLayout').outerHTML =
+              '<div class="cart-empty"><div style="font-size:4rem;margin-bottom:20px">🛒</div>' +
+              '<p>Dein Warenkorb ist leer.</p>' +
+              '<a href="/collections/all" class="btn-fire">🍺 Jetzt shoppen</a></div>';
+          }
+        }, 260);
+      }
+    } else {
+      var qtyEl = document.querySelector('[data-key-display="' + key + '"]');
+      if (qtyEl) qtyEl.textContent = qty;
+
+      var priceEl = document.querySelector('[data-key-price="' + key + '"]');
+      if (priceEl) {
+        var unit = parseInt(priceEl.dataset.unitPrice) || 0;
+        priceEl.textContent = formatMoney(unit * qty);
+      }
+
+      var row = document.querySelector('.cart-item[data-key="' + key + '"]');
+      if (row) {
+        var minus = row.querySelector('.qty-btn.minus');
+        var plus  = row.querySelector('.qty-btn.plus');
+        if (minus) minus.dataset.qty = qty - 1;
+        if (plus)  plus.dataset.qty  = qty + 1;
+      }
+    }
+
+    var subtotalEl = document.getElementById('cart-subtotal');
+    var totalEl    = document.getElementById('cart-total');
+    if (subtotalEl) subtotalEl.textContent = formatMoney(cart.total_price);
+    if (totalEl)    totalEl.textContent    = formatMoney(cart.total_price);
+
+    var deliveryLine = document.getElementById('delivery-line');
+    if (deliveryLine) {
+      deliveryLine.innerHTML = cart.total_price >= FREE_DELIVERY_THRESHOLD
+        ? '<span>Lieferung</span><strong style="color:var(--mint)">Gratis 🎉</strong>'
+        : '<span>Lieferung</span><strong>€ 2,50</strong>';
+    }
+
+    updateFreeDeliveryBar(cart.total_price);
+    updateCartUI(cart.item_count, cart.total_price);
+
+  } catch(e) {
+    showToast('❌ Fehler – bitte Seite neu laden');
+    window.location.reload();
+  } finally {
+    document.querySelectorAll('.qty-btn, .cart-remove').forEach(function(b) { b.disabled = false; });
+  }
+}
+</script>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page_title }} – DringaBringa</title>
+  <meta name="description" content="{{ page_description | default: 'DringaBringa – Dein Nacht-Lieferservice in Wels. Getränke & Snacks täglich 21:00–09:00 direkt zu Dir nach Hause.' | escape }}">
+
+  <link rel="canonical" href="{{ canonical_url }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦉</text></svg>">
+
+  <meta property="og:title" content="{{ page_title }} – DringaBringa">
+  <meta property="og:description" content="{{ page_description | default: 'Getränke & Snacks täglich 21:00–09:00 – Expresslieferung in 25 Min.' | escape }}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{ canonical_url }}">
+  <meta property="og:locale" content="de_AT">
+  {%- if product.featured_image -%}
+    <meta property="og:image" content="{{ product.featured_image | image_url: width: 1200 }}">
+  {%- elsif collection.image -%}
+    <meta property="og:image" content="{{ collection.image | image_url: width: 1200 }}">
+  {%- else -%}
+    <meta property="og:image" content="{{ 'logo.png' | asset_url }}">
+  {%- endif -%}
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FoodDelivery",
+    "name": "DringaBringa",
+    "description": "Nacht-Lieferservice für Getränke & Snacks in Wels",
+    "url": "{{ shop.url }}",
+    "telephone": "+4365077456​16",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Wels",
+      "postalCode": "4600",
+      "addressRegion": "Oberösterreich",
+      "addressCountry": "AT"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+        "opens": "21:00",
+        "closes": "09:00"
+      }
+    ],
+    "priceRange": "€"
+  }
+  </script>
+
+  {{ content_for_header }}
+
+  <link rel="preload" as="image" href="{{ 'logo.png' | asset_url }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    media="print"
+    onload="this.media='all'"
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500&display=swap">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500&display=swap">
+  </noscript>
+
+  {{ 'base.css' | asset_url | stylesheet_tag }}
+</head>
+<body>
+
+  <a href="#MainContent" class="skip-link">Zum Inhalt springen</a>
+
+  {% section 'header' %}
+
+  <main id="MainContent" tabindex="-1">
+    {{ content_for_layout }}
+  </main>
+
+  {% section 'footer' %}
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  {{ 'theme.js' | asset_url | script_tag }}
+</body>
+</html>
