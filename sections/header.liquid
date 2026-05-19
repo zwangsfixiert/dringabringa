@@ -1,0 +1,119 @@
+{% comment %} sections/header.liquid – DringaBringa v3 {% endcomment %}
+
+{% assign free_ship_threshold = 2000 %}
+{% assign cart_total_cents = cart.total_price %}
+{% assign remaining_cents = free_ship_threshold | minus: cart_total_cents %}
+{% if remaining_cents < 0 %}{% assign remaining_cents = 0 %}{% endif %}
+{% assign progress_pct = cart_total_cents | times: 100 | divided_by: free_ship_threshold %}
+{% if progress_pct > 100 %}{% assign progress_pct = 100 %}{% endif %}
+
+<header class="site-header">
+
+  {%- comment -%} ── Free-Delivery Progress Bar ─{%- endcomment -%}
+  <div class="fds-bar" id="fdsBar"
+    data-total="{{ cart_total_cents }}"
+    data-threshold="{{ free_ship_threshold }}"
+    data-progress="{{ progress_pct }}">
+    <div class="fds-track">
+      <div class="fds-fill" style="width:{{ progress_pct }}%"></div>
+    </div>
+    <span class="fds-label">
+      {%- if cart_total_cents >= free_ship_threshold -%}
+        🎉 Gratis-Lieferung inklusive!
+      {%- else -%}
+        Noch <strong>{{ remaining_cents | money }}</strong> bis zur Gratis-Lieferung
+      {%- endif -%}
+    </span>
+  </div>
+
+  <div class="header-inner">
+
+    {%- comment -%} ── Logo ──{%- endcomment -%}
+    <a href="/" class="site-logo" aria-label="DringaBringa – Startseite">
+      {%- if section.settings.logo != blank -%}
+        <img class="site-logo__img"
+          src="{{ section.settings.logo | image_url: width: 200 }}"
+          alt="{{ shop.name }}"
+          width="{{ section.settings.logo_width | default: 54 }}"
+          height="auto"
+          loading="eager" fetchpriority="high">
+      {%- else -%}
+        <img class="site-logo__img"
+          src="{{ 'logo.png' | asset_url }}"
+          alt="DringaBringa Logo"
+          width="54" height="43"
+          loading="eager" fetchpriority="high">
+      {%- endif -%}
+      <span class="site-logo-text">DringaBringa</span>
+    </a>
+
+    {%- comment -%} ── Live-Status Badge ──{%- endcomment -%}
+    <div class="header-badge" id="headerBadge" aria-live="polite">
+      <div class="live-dot"></div>
+      <span class="badge-text">21:00–09:00 · Wels</span>
+    </div>
+
+    <div class="header-right">
+      <nav aria-label="Hauptnavigation">
+        <ul class="header-nav">
+          <li><a href="/">Start</a></li>
+          <li><a href="/collections/all">Shop</a></li>
+          <li><a href="/collections/set-angebote">Angebote</a></li>
+        </ul>
+      </nav>
+
+      <a href="/cart" class="cart-link" aria-label="Warenkorb – {{ cart.item_count }} Artikel">
+        🛒 Warenkorb
+        <span class="cart-count" aria-live="polite">{{ cart.item_count }}</span>
+        <span class="cart-total"{% if cart.item_count == 0 %} style="display:none"{% endif %}>{{ cart.total_price | money }}</span>
+      </a>
+
+      <button class="burger-btn" id="burgerBtn"
+        aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobileNav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Navigation -->
+<div class="mobile-nav" id="mobileNav" aria-hidden="true">
+  <nav aria-label="Mobile Navigation">
+    <ul>
+      <li><a href="/" onclick="closeMobileNav()">🏠 Start</a></li>
+      <li><a href="/collections/all" onclick="closeMobileNav()">🛒 Shop</a></li>
+      <li><a href="/collections/alkoholische-getranke" onclick="closeMobileNav()">🍺 Alkoholische Getränke</a></li>
+      <li><a href="/collections/softdrinks" onclick="closeMobileNav()">🥤 Softdrinks</a></li>
+      <li><a href="/collections/energy" onclick="closeMobileNav()">⚡ Energy Drinks</a></li>
+      <li><a href="/collections/wasser" onclick="closeMobileNav()">💧 Wasser</a></li>
+      <li><a href="/collections/snacks" onclick="closeMobileNav()">🍫 Snacks</a></li>
+      <li><a href="/collections/set-angebote" onclick="closeMobileNav()">🧺 Set-Angebote</a></li>
+      <li><a href="/cart" onclick="closeMobileNav()">🛒 Warenkorb ({{ cart.item_count }})</a></li>
+    </ul>
+    <div class="mobile-nav-footer">
+      <div class="live-dot"></div>
+      Täglich 21:00–09:00 · Wels
+    </div>
+  </nav>
+</div>
+<div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="closeMobileNav()"></div>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo-Bild (optional)"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 30, "max": 80, "step": 2, "default": 54,
+      "unit": "px",
+      "label": "Logo-Breite"
+    }
+  ]
+}
+{% endschema %}

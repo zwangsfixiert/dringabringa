@@ -1,0 +1,26 @@
+{% comment %} templates/index.json – DringaBringa v3 {% endcomment %}
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "settings": {}
+    },
+    "delivery-strip": {
+      "type": "delivery-strip",
+      "settings": {}
+    },
+    "how-it-works": {
+      "type": "how-it-works",
+      "settings": {}
+    },
+    "featured-collection": {
+      "type": "featured-collection",
+      "settings": {
+        "eyebrow": "🔥 Beliebt diese Nacht",
+        "title": "Top Produkte",
+        "products_to_show": 8
+      }
+    }
+  },
+  "order": ["hero", "delivery-strip", "how-it-works", "featured-collection"]
+}
